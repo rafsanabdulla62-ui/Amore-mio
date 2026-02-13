@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Will you be my Valentine?</title>
+  <style>
+    :root { --pink:#ff4d88; --pink2:#ff77aa; }
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #ffe3ee, #fff);
+      color:#222;
+      overflow:hidden;
+    }
+    .card{
+      width:min(560px, 92vw);
+      background: rgba(255,255,255,.85);
+      border: 1px solid #ffd0df;
+      border-radius: 22px;
+      box-shadow: 0 18px 60px rgba(255, 77, 136, .18);
+      padding: 26px 20px;
+      text-align:center;
+      position:relative;
+    }
+    h1{
+      margin: 4px 0 14px;
+      font-size: clamp(24px, 3.6vw, 36px);
+      letter-spacing: .2px;
+    }
+    #message{
+      margin: 10px 0 14px;
+      font-size: 18px;
+      min-height: 24px;
+    }
+    .gif{
+      width: min(420px, 86vw);
+      height: auto;
+      border-radius: 16px;
+      border: 1px solid #ffd0df;
+      box-shadow: 0 10px 25px rgba(0,0,0,.06);
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .btns{
+      margin-top: 18px;
+      display:flex;
+      gap: 14px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    button{
+      border:0;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 18px;
+      cursor:pointer;
+      transition: transform .08s ease, box-shadow .2s ease, background .2s ease;
+      box-shadow: 0 12px 20px rgba(0,0,0,.08);
+    }
+    button:active{ transform: scale(0.98); }
+    #yesBtn{
+      background: linear-gradient(135deg, var(--pink), var(--pink2));
+      color:white;
+    }
+    #yesBtn:hover{ box-shadow: 0 14px 26px rgba(255,77,136,.28); }
+    #noBtn{
+      background: #f1f1f1;
+      color:#333;
+      position: relative;
+    }
+
+    /* floating hearts (optional cute effect) */
+    .heart{
+      position: absolute;
+      font-size: 18px;
+      opacity: .85;
+      animation: floatUp 2.6s ease-in forwards;
+      pointer-events:none;
+      user-select:none;
+    }
+    @keyframes floatUp{
+      from{ transform: translateY(0) scale(1); opacity:.9; }
+      to{ transform: translateY(-120px) scale(1.25); opacity:0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1 id="title">Will you be my Valentine? 💌</h1>
+
+    <!-- Replace these GIF URLs with any you like -->
+    <img
+      id="mainGif"
+      class="gif"
+      alt="cute gif"
+      src="https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif"
+    />
+
+    <div id="message"></div>
+
+    <div class="btns" id="btns">
+      <button id="yesBtn">Yes 💖</button>
+      <button id="noBtn">No 😳</button>
+    </div>
+  </div>
+
+<script>
+  const noBtn = document.getElementById("noBtn");
+  const yesBtn = document.getElementById("yesBtn");
+  const msg = document.getElementById("message");
+  const title = document.getElementById("title");
+  const gif = document.getElementById("mainGif");
+  const card = document.getElementById("card");
+  const btns = document.getElementById("btns");
+
+  // Tweak these
+  const DODGE_TRIES_BEFORE_CLICKABLE = 10; // after this many dodges, "No" can be clicked
+  let dodgeCount = 0;
+  let noClickStage = 0; // 0 -> "are you sure", 1 -> "i will cry", 2 -> still no
+
+  function randBetween(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  function moveNoButton(){
+    // Move the button within the card area
+    const rect = card.getBoundingClientRect();
+    const btnRect = noBtn.getBoundingClientRect();
+
+    // padding so it stays inside the card
+    const padding = 14;
+    const maxX = rect.width - btnRect.width - padding;
+    const maxY = rect.height - btnRect.height - padding;
+
+    const x = randBetween(padding, Math.max(padding, maxX));
+    const y = randBetween(padding, Math.max(padding, maxY));
+
+    noBtn.style.position = "absolute";
+    noBtn.style.left = x + "px";
+    noBtn.style.top = y + "px";
+  }
+
+  function spawnHeart(x, y){
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.textContent = ["💖","💘","💕","💗","💝"][randBetween(0,4)];
+    h.style.left = x + "px";
+    h.style.top = y + "px";
+    card.appendChild(h);
+    setTimeout(() => h.remove(), 2600);
+  }
+
+  // Make "No" dodge the cursor/tap (until enough tries)
+  function handleNoApproach(e){
+    if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) {
+      dodgeCount++;
+      moveNoButton();
+      msg.textContent = `No? 😳 (attempt ${dodgeCount}/${DODGE_TRIES_BEFORE_CLICKABLE})`;
+    } else {
+      msg.textContent = "Okay… you can click No now 😢";
+      // stop dodging once it's allowed to be clicked
+      noBtn.removeEventListener("mouseenter", handleNoApproach);
+      noBtn.removeEventListener("touchstart", handleNoApproach);
+    }
+  }
+
+  // Desktop hover
+  noBtn.addEventListener("mouseenter", handleNoApproach);
+  // Mobile tap near it
+  noBtn.addEventListener("touchstart", handleNoApproach, { passive: true });
+
+  // When "No" is actually clicked (only possible after dodge phase ends)
+  noBtn.addEventListener("click", () => {
+    if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) return; // just in case
+
+    if (noClickStage === 0) {
+      msg.textContent = "Are you sure? 😢";
+      noBtn.textContent = "No…";
+      noClickStage = 1;
+    } else if (noClickStage === 1) {
+      msg.textContent = "I will cry 😭";
+      noBtn.textContent = "Still no 😭";
+      noClickStage = 2;
+    } else {
+      msg.textContent = "My heart is breaking… 💔";
+    }
+  });
+
+  // YES flow
+  yesBtn.addEventListener("click", (e) => {
+    title.textContent = "YAYYYYY!!! 💘";
+    msg.textContent = "I love you so much 💖💘💕💗💝";
+    gif.src = "https://media.giphy.com/media/l4pTdcifPZLpDjL1e/giphy.gif"; // replace with your happy couple gif
+    btns.innerHTML = ""; // remove buttons
+
+    // little heart burst
+    const rect = card.getBoundingClientRect();
+    for (let i=0; i<18; i++){
+      spawnHeart(randBetween(40, rect.width-40), randBetween(80, rect.height-40));
+    }
+  });
+
+  // initial position so it can "run" inside the card
+  moveNoButton();
+  // Keep it roughly placed even if screen resizes
+  window.addEventListener("resize", () => {
+    if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) moveNoButton();
+  });
+</script>
+</body>
+</html>
