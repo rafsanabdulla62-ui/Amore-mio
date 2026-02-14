@@ -45,6 +45,7 @@
       box-shadow: 0 10px 25px rgba(0,0,0,.06);
       user-select:none;
       -webkit-user-drag:none;
+      background: #fff;
     }
     .btns{
       margin-top: 18px;
@@ -115,17 +116,14 @@
 <body>
 
   <!-- AUDIO -->
-  <!-- First page tracks: play one after another (no loop attribute here) -->
   <audio id="bg1" preload="auto">
     <source src="goblin_amnesia.mp3" type="audio/mpeg">
   </audio>
 
   <audio id="bg2" preload="auto">
-    <!-- file has a space -> %20 -->
     <source src="goblin_amnesia%202.mp3" type="audio/mpeg">
   </audio>
 
-  <!-- YES page track (loops) -->
   <audio id="drop" loop preload="auto">
     <source src="leja_instrumental.mp3" type="audio/mpeg">
   </audio>
@@ -136,11 +134,11 @@
     <img
       id="mainGif"
       class="gif"
-      alt="our photo"
+      alt=""
       src="IMG_1066.jpeg"
     />
 
-    <img id="sticker" src="sticker.jpeg" alt="our sticker">
+    <img id="sticker" src="sticker.jpeg" alt="">
 
     <div id="message"></div>
 
@@ -160,21 +158,18 @@
   const btns = document.getElementById("btns");
   const sticker = document.getElementById("sticker");
 
-  // Audio refs
   const bg1 = document.getElementById("bg1");
   const bg2 = document.getElementById("bg2");
   const drop = document.getElementById("drop");
 
-  // ---------- MUSIC LOGIC (FIRST PAGE: one after another) ----------
+  // Music setup
   let started = false;
   let onYesPage = false;
 
-  // volumes
   bg1.volume = 0.28;
   bg2.volume = 0.28;
   drop.volume = 0.90;
 
-  // When bg1 ends, play bg2. When bg2 ends, play bg1. (endless)
   bg1.addEventListener("ended", () => {
     if (onYesPage) return;
     bg2.currentTime = 0;
@@ -189,7 +184,6 @@
   function startFirstPageMusicOnce() {
     if (started || onYesPage) return;
     started = true;
-    // Start track 1; then the ended handlers will chain the rest
     bg1.currentTime = 0;
     bg1.play().catch(()=>{});
   }
@@ -206,11 +200,10 @@
     drop.play().catch(()=>{});
   }
 
-  // iPhone-friendly: start on first tap anywhere
   document.addEventListener("touchstart", startFirstPageMusicOnce, { once: true, passive: true });
   document.addEventListener("click", startFirstPageMusicOnce, { once: true });
 
-  // ---------- UI LOGIC ----------
+  // No button logic
   const DODGE_TRIES_BEFORE_CLICKABLE = 10;
   let dodgeCount = 0;
   let noClickStage = 0;
@@ -277,17 +270,27 @@
     }
   });
 
+  // Helper: set YES gif with fallback
+  function setYesGif(){
+    // Try local file first (best)
+    gif.onerror = () => {
+      // Fallback to online gif if local missing
+      gif.onerror = null;
+      gif.src = "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif";
+    };
+    gif.src = "hearts.gif";
+  }
+
   // YES flow
   yesBtn.addEventListener("click", () => {
-    startFirstPageMusicOnce(); // ensures iPhone gesture allowed
+    startFirstPageMusicOnce();
     startYesMusic();
 
     sticker.style.display = "block";
     title.textContent = "YAYYYYY!!! 💘";
     msg.textContent = "I love you so much 💖💘💕💗💝";
 
-    // Local gif so it never gets blocked
-    gif.src = "hearts.gif";
+    setYesGif();          // ✅ hearts pouring GIF on YES
 
     btns.innerHTML = "";
 
