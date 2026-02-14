@@ -74,7 +74,7 @@
       position: relative;
     }
 
-    /* floating hearts (optional cute effect) */
+    /* floating hearts */
     .heart{
       position: absolute;
       font-size: 18px;
@@ -87,12 +87,32 @@
       from{ transform: translateY(0) scale(1); opacity:.9; }
       to{ transform: translateY(-120px) scale(1.25); opacity:0; }
     }
+
+    /* FLOATING STICKER (hidden until YES) */
+    #sticker{
+      position:absolute;
+      top: 15px;
+      right: 15px;
+      width: 95px;
+      height: 95px;
+      object-fit: cover;
+      border-radius: 20px;
+      border: 3px solid white;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      display: none;
+      animation: floatSticker 3s ease-in-out infinite;
+      z-index: 5;
+    }
+    @keyframes floatSticker {
+      0% { transform: translateY(0px) rotate(8deg); }
+      50% { transform: translateY(-12px) rotate(8deg); }
+      100% { transform: translateY(0px) rotate(8deg); }
+    }
   </style>
 </head>
 <body>
 
   <!-- AUDIO -->
-  <!-- NOTE: The 2nd filename has a space. We encode it as %20 to be safe. -->
   <audio id="bg1" loop preload="auto">
     <source src="goblin_amnesia.mp3" type="audio/mpeg">
   </audio>
@@ -115,6 +135,9 @@
       src="IMG_1066.jpeg"
     />
 
+    <!-- Sticker image (your uploaded file) -->
+    <img id="sticker" src="sticker.jpeg" alt="floating sticker">
+
     <div id="message"></div>
 
     <div class="btns" id="btns">
@@ -131,6 +154,7 @@
   const gif = document.getElementById("mainGif");
   const card = document.getElementById("card");
   const btns = document.getElementById("btns");
+  const sticker = document.getElementById("sticker");
 
   // Audio refs
   const bg1 = document.getElementById("bg1");
@@ -144,7 +168,6 @@
     if (firstMusicStarted) return;
     firstMusicStarted = true;
 
-    // soft volumes (adjust if needed)
     bg1.volume = 0.22;
     bg2.volume = 0.22;
 
@@ -157,20 +180,18 @@
   document.addEventListener("click", startFirstPageMusicOnce, { once: true });
 
   function switchToSecondPageMusic() {
-    // stop first page music
     bg1.pause(); bg1.currentTime = 0;
     bg2.pause(); bg2.currentTime = 0;
 
-    // play drop (loop)
     drop.volume = 0.85;
     drop.currentTime = 0;
     drop.play().catch(()=>{});
   }
 
   // Tweak these
-  const DODGE_TRIES_BEFORE_CLICKABLE = 10; // after this many dodges, "No" can be clicked
+  const DODGE_TRIES_BEFORE_CLICKABLE = 10;
   let dodgeCount = 0;
-  let noClickStage = 0; // 0 -> "are you sure", 1 -> "i will cry", 2 -> still no
+  let noClickStage = 0;
 
   function randBetween(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
@@ -200,9 +221,7 @@
     setTimeout(() => h.remove(), 2600);
   }
 
-  // Make "No" dodge the cursor/tap (until enough tries)
-  function handleNoApproach(e){
-    // ensure music has started as soon as they interact with buttons
+  function handleNoApproach(){
     startFirstPageMusicOnce();
 
     if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) {
@@ -219,7 +238,6 @@
   noBtn.addEventListener("mouseenter", handleNoApproach);
   noBtn.addEventListener("touchstart", handleNoApproach, { passive: true });
 
-  // When "No" is actually clicked (only possible after dodge phase ends)
   noBtn.addEventListener("click", () => {
     startFirstPageMusicOnce();
     if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) return;
@@ -239,18 +257,22 @@
 
   // YES flow
   yesBtn.addEventListener("click", () => {
-    // make sure first music started (so iPhone allows switching)
     startFirstPageMusicOnce();
-    // switch to 2nd page (drop) looping music
     switchToSecondPageMusic();
+
+    // show floating sticker
+    sticker.style.display = "block";
 
     title.textContent = "YAYYYYY!!! 💘";
     msg.textContent = "I love you so much 💖💘💕💗💝";
-    gif.src = "IMG_1066.jpeg"; // keep your photo, or replace with a happy couple gif if you want
+
+    // Cute animated hearts GIF (replace with your exact basket-hearts GIF if you want)
+    gif.src = "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif";
+
     btns.innerHTML = "";
 
     const rect = card.getBoundingClientRect();
-    for (let i=0; i<18; i++){
+    for (let i=0; i<22; i++){
       spawnHeart(randBetween(40, rect.width-40), randBetween(80, rect.height-40));
     }
   });
