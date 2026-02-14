@@ -90,14 +90,28 @@
   </style>
 </head>
 <body>
+
+  <!-- AUDIO -->
+  <!-- NOTE: The 2nd filename has a space. We encode it as %20 to be safe. -->
+  <audio id="bg1" loop preload="auto">
+    <source src="goblin_amnesia.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="bg2" loop preload="auto">
+    <source src="goblin_amnesia%202.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="drop" loop preload="auto">
+    <source src="leja_instrumental.mp3" type="audio/mpeg">
+  </audio>
+
   <div class="card" id="card">
     <h1 id="title">Will you be my Valentine? 💌</h1>
 
-    <!-- Replace these GIF URLs with any you like -->
     <img
       id="mainGif"
       class="gif"
-      alt="cute gif"
+      alt="our photo"
       src="IMG_1066.jpeg"
     />
 
@@ -118,6 +132,41 @@
   const card = document.getElementById("card");
   const btns = document.getElementById("btns");
 
+  // Audio refs
+  const bg1 = document.getElementById("bg1");
+  const bg2 = document.getElementById("bg2");
+  const drop = document.getElementById("drop");
+
+  // iPhone-friendly: audio starts only after user interaction
+  let firstMusicStarted = false;
+
+  function startFirstPageMusicOnce() {
+    if (firstMusicStarted) return;
+    firstMusicStarted = true;
+
+    // soft volumes (adjust if needed)
+    bg1.volume = 0.22;
+    bg2.volume = 0.22;
+
+    bg1.play().catch(()=>{});
+    bg2.play().catch(()=>{});
+  }
+
+  // Start soft music on first tap/click anywhere
+  document.addEventListener("touchstart", startFirstPageMusicOnce, { once: true, passive: true });
+  document.addEventListener("click", startFirstPageMusicOnce, { once: true });
+
+  function switchToSecondPageMusic() {
+    // stop first page music
+    bg1.pause(); bg1.currentTime = 0;
+    bg2.pause(); bg2.currentTime = 0;
+
+    // play drop (loop)
+    drop.volume = 0.85;
+    drop.currentTime = 0;
+    drop.play().catch(()=>{});
+  }
+
   // Tweak these
   const DODGE_TRIES_BEFORE_CLICKABLE = 10; // after this many dodges, "No" can be clicked
   let dodgeCount = 0;
@@ -126,11 +175,9 @@
   function randBetween(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
   function moveNoButton(){
-    // Move the button within the card area
     const rect = card.getBoundingClientRect();
     const btnRect = noBtn.getBoundingClientRect();
 
-    // padding so it stays inside the card
     const padding = 14;
     const maxX = rect.width - btnRect.width - padding;
     const maxY = rect.height - btnRect.height - padding;
@@ -155,26 +202,27 @@
 
   // Make "No" dodge the cursor/tap (until enough tries)
   function handleNoApproach(e){
+    // ensure music has started as soon as they interact with buttons
+    startFirstPageMusicOnce();
+
     if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) {
       dodgeCount++;
       moveNoButton();
       msg.textContent = "No? 😳";
     } else {
       msg.textContent = "Okay… you can click No now 😢";
-      // stop dodging once it's allowed to be clicked
       noBtn.removeEventListener("mouseenter", handleNoApproach);
       noBtn.removeEventListener("touchstart", handleNoApproach);
     }
   }
 
-  // Desktop hover
   noBtn.addEventListener("mouseenter", handleNoApproach);
-  // Mobile tap near it
   noBtn.addEventListener("touchstart", handleNoApproach, { passive: true });
 
   // When "No" is actually clicked (only possible after dodge phase ends)
   noBtn.addEventListener("click", () => {
-    if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) return; // just in case
+    startFirstPageMusicOnce();
+    if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) return;
 
     if (noClickStage === 0) {
       msg.textContent = "Are you sure? 😢";
@@ -190,22 +238,24 @@
   });
 
   // YES flow
-  yesBtn.addEventListener("click", (e) => {
+  yesBtn.addEventListener("click", () => {
+    // make sure first music started (so iPhone allows switching)
+    startFirstPageMusicOnce();
+    // switch to 2nd page (drop) looping music
+    switchToSecondPageMusic();
+
     title.textContent = "YAYYYYY!!! 💘";
     msg.textContent = "I love you so much 💖💘💕💗💝";
-    gif.src = "https://media.giphy.com/media/l4pTdcifPZLpDjL1e/giphy.gif"; // replace with your happy couple gif
-    btns.innerHTML = ""; // remove buttons
+    gif.src = "IMG_1066.jpeg"; // keep your photo, or replace with a happy couple gif if you want
+    btns.innerHTML = "";
 
-    // little heart burst
     const rect = card.getBoundingClientRect();
     for (let i=0; i<18; i++){
       spawnHeart(randBetween(40, rect.width-40), randBetween(80, rect.height-40));
     }
   });
 
-  // initial position so it can "run" inside the card
   moveNoButton();
-  // Keep it roughly placed even if screen resizes
   window.addEventListener("resize", () => {
     if (dodgeCount < DODGE_TRIES_BEFORE_CLICKABLE) moveNoButton();
   });
