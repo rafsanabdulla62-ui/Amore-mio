@@ -19,7 +19,7 @@
     }
     .card{
       width:min(560px, 92vw);
-      background: rgba(255,255,255,.85);
+      background: rgba(255,255,255,.9);
       border: 1px solid #ffd0df;
       border-radius: 22px;
       box-shadow: 0 18px 60px rgba(255, 77, 136, .18);
@@ -88,39 +88,44 @@
       to{ transform: translateY(-120px) scale(1.25); opacity:0; }
     }
 
-    /* FLOATING STICKER (hidden until YES) */
+    /* floating sticker (shown only after YES) */
     #sticker{
       position:absolute;
       top: 15px;
       right: 15px;
-      width: 95px;
-      height: 95px;
-      object-fit: cover;
-      border-radius: 20px;
+      width: 110px;
+      height: 110px;
+      object-fit: contain;   /* NO CROPPING */
+      background: white;
+      padding: 6px;
+      border-radius: 22px;
       border: 3px solid white;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
       display: none;
       animation: floatSticker 3s ease-in-out infinite;
       z-index: 5;
     }
     @keyframes floatSticker {
-      0% { transform: translateY(0px) rotate(8deg); }
-      50% { transform: translateY(-12px) rotate(8deg); }
-      100% { transform: translateY(0px) rotate(8deg); }
+      0% { transform: translateY(0px) rotate(6deg); }
+      50% { transform: translateY(-12px) rotate(6deg); }
+      100% { transform: translateY(0px) rotate(6deg); }
     }
   </style>
 </head>
 <body>
 
   <!-- AUDIO -->
-  <audio id="bg1" loop preload="auto">
+  <!-- First page tracks: play one after another (no loop attribute here) -->
+  <audio id="bg1" preload="auto">
     <source src="goblin_amnesia.mp3" type="audio/mpeg">
   </audio>
 
-  <audio id="bg2" loop preload="auto">
+  <audio id="bg2" preload="auto">
+    <!-- file has a space -> %20 -->
     <source src="goblin_amnesia%202.mp3" type="audio/mpeg">
   </audio>
 
+  <!-- YES page track (loops) -->
   <audio id="drop" loop preload="auto">
     <source src="leja_instrumental.mp3" type="audio/mpeg">
   </audio>
@@ -135,8 +140,7 @@
       src="IMG_1066.jpeg"
     />
 
-    <!-- Sticker image (your uploaded file) -->
-    <img id="sticker" src="sticker.jpeg" alt="floating sticker">
+    <img id="sticker" src="sticker.jpeg" alt="our sticker">
 
     <div id="message"></div>
 
@@ -161,34 +165,52 @@
   const bg2 = document.getElementById("bg2");
   const drop = document.getElementById("drop");
 
-  // iPhone-friendly: audio starts only after user interaction
-  let firstMusicStarted = false;
+  // ---------- MUSIC LOGIC (FIRST PAGE: one after another) ----------
+  let started = false;
+  let onYesPage = false;
+
+  // volumes
+  bg1.volume = 0.28;
+  bg2.volume = 0.28;
+  drop.volume = 0.90;
+
+  // When bg1 ends, play bg2. When bg2 ends, play bg1. (endless)
+  bg1.addEventListener("ended", () => {
+    if (onYesPage) return;
+    bg2.currentTime = 0;
+    bg2.play().catch(()=>{});
+  });
+  bg2.addEventListener("ended", () => {
+    if (onYesPage) return;
+    bg1.currentTime = 0;
+    bg1.play().catch(()=>{});
+  });
 
   function startFirstPageMusicOnce() {
-    if (firstMusicStarted) return;
-    firstMusicStarted = true;
-
-    bg1.volume = 0.22;
-    bg2.volume = 0.22;
-
+    if (started || onYesPage) return;
+    started = true;
+    // Start track 1; then the ended handlers will chain the rest
+    bg1.currentTime = 0;
     bg1.play().catch(()=>{});
-    bg2.play().catch(()=>{});
   }
 
-  // Start soft music on first tap/click anywhere
-  document.addEventListener("touchstart", startFirstPageMusicOnce, { once: true, passive: true });
-  document.addEventListener("click", startFirstPageMusicOnce, { once: true });
-
-  function switchToSecondPageMusic() {
+  function stopFirstPageMusic() {
     bg1.pause(); bg1.currentTime = 0;
     bg2.pause(); bg2.currentTime = 0;
+  }
 
-    drop.volume = 0.85;
+  function startYesMusic() {
+    onYesPage = true;
+    stopFirstPageMusic();
     drop.currentTime = 0;
     drop.play().catch(()=>{});
   }
 
-  // Tweak these
+  // iPhone-friendly: start on first tap anywhere
+  document.addEventListener("touchstart", startFirstPageMusicOnce, { once: true, passive: true });
+  document.addEventListener("click", startFirstPageMusicOnce, { once: true });
+
+  // ---------- UI LOGIC ----------
   const DODGE_TRIES_BEFORE_CLICKABLE = 10;
   let dodgeCount = 0;
   let noClickStage = 0;
@@ -257,17 +279,15 @@
 
   // YES flow
   yesBtn.addEventListener("click", () => {
-    startFirstPageMusicOnce();
-    switchToSecondPageMusic();
+    startFirstPageMusicOnce(); // ensures iPhone gesture allowed
+    startYesMusic();
 
-    // show floating sticker
     sticker.style.display = "block";
-
     title.textContent = "YAYYYYY!!! 💘";
     msg.textContent = "I love you so much 💖💘💕💗💝";
 
-    // Cute animated hearts GIF (replace with your exact basket-hearts GIF if you want)
-    gif.src = "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif";
+    // Local gif so it never gets blocked
+    gif.src = "hearts.gif";
 
     btns.innerHTML = "";
 
